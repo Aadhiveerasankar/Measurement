@@ -1,7 +1,7 @@
 {
   "name": "Granite Measurement App",
   "short_name": "Granite Measure",
-  "start_url": "./",
+  "start_url": "/Measurement/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0f172a",
