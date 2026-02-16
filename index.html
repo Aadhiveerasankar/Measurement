@@ -1,3 +1,5 @@
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Granite Measurement Sheet</title>
@@ -11,7 +13,6 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 
-  <!-- ✅ STYLES -->
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -137,3 +138,135 @@
     }
   </style>
 </head>
+
+<body>
+
+  <div class="header">
+    <h3>Granite Measurement</h3>
+    <h3>Sai Ganesh Industries</h3>
+  </div>
+
+  <table id="tbl">
+    <tr>
+      <th>S.No</th>
+      <th>Length (inch)</th>
+      <th>Width (inch)</th>
+      <th>Qty (SFT)</th>
+    </tr>
+  </table>
+
+  <br>
+  <button onclick="addRow()">Add Row</button>
+  <button onclick="openCopyBox()">Copy / Paste</button>
+  <button onclick="location.reload()">Fresh Sheet</button>
+
+  <div id="copyBox">
+    <label style="font-size:13px; font-weight:bold;">Paste up to which S.No?</label>
+    <input type="number" id="copyEndSno" placeholder="Example: 18">
+
+    <button class="fullBtn" id="pasteBtn" onclick="doCopyPaste()">Paste</button>
+    <button class="fullBtn cancelBtn" onclick="closeCopyBox()">Cancel</button>
+  </div>
+
+  <script>
+    let sno = 1;
+    let copyLength = 0;
+    let copyWidth = 0;
+    let selectedCopyRowIndex = 1;
+    let activeColumn = "length";
+
+    function onlyNumberDot(el) {
+      el.value = el.value.replace(/[^0-9.]/g, "");
+      const parts = el.value.split(".");
+      if (parts.length > 2) {
+        el.value = parts[0] + "." + parts.slice(1).join("");
+      }
+    }
+
+    function addRow() {
+      const table = document.getElementById("tbl");
+      const totalRow = document.getElementById("totalRow");
+
+      const row = totalRow
+        ? table.insertRow(totalRow.rowIndex)
+        : table.insertRow();
+
+      row.innerHTML = `
+        <td>${sno++}</td>
+        <td><input type="text" class="length" oninput="onlyNumberDot(this); calc(this)"></td>
+        <td><input type="text" class="width" oninput="onlyNumberDot(this); calc(this)"></td>
+        <td class="sft">0</td>
+      `;
+
+      row.querySelectorAll("input").forEach((input, index) => {
+        input.addEventListener("focus", () => selectRowForCopy(row, input));
+        input.addEventListener("keydown", e => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            moveToNextRow(row, index);
+          }
+        });
+      });
+
+      if (!totalRow) {
+        const tr = table.insertRow();
+        tr.id = "totalRow";
+        tr.innerHTML = `
+          <td colspan="3" style="text-align:right;">Total SFT</td>
+          <td id="grandTotal">0</td>
+        `;
+      }
+    }
+
+    function moveToNextRow(row, index) {
+      const next = row.nextElementSibling;
+      if (!next || next.id === "totalRow") return;
+      next.querySelectorAll("input")[index].focus();
+    }
+
+    function selectRowForCopy(row, input) {
+      document.querySelectorAll("#tbl tr").forEach(r => r.classList.remove("selectedRow"));
+      row.classList.add("selectedRow");
+      activeColumn = input.classList.contains("length") ? "length" : "width";
+    }
+
+    function calc(input) {
+      const row = input.closest("tr");
+      const l = parseFloat(row.querySelector(".length").value) || 0;
+      const w = parseFloat(row.querySelector(".width").value) || 0;
+      row.querySelector(".sft").innerText = l && w ? (l * w / 144).toFixed(2) : "0";
+      totalSFT();
+    }
+
+    function totalSFT() {
+      let sum = 0;
+      document.querySelectorAll(".sft").forEach(td => sum += parseFloat(td.innerText) || 0);
+      document.getElementById("grandTotal").innerText = sum.toFixed(2);
+    }
+
+    function openCopyBox() {
+      document.getElementById("copyBox").style.display = "block";
+    }
+
+    function closeCopyBox() {
+      document.getElementById("copyBox").style.display = "none";
+    }
+
+    function doCopyPaste() {
+      closeCopyBox();
+    }
+
+    for (let i = 0; i < 40; i++) addRow();
+  </script>
+
+  <!-- ✅ SERVICE WORKER REGISTER -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js");
+      });
+    }
+  </script>
+
+</body>
+</html>
