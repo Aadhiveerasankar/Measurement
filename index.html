@@ -1,17 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Granite Measurement Sheet</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
 
-  <!-- ✅ PWA CONFIG -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0f172a">
+  <title>Granite Measurement</title>
 
-  <!-- ✅ APP ICONS -->
-  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+  <!-- Viewport -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0f172a" />
+
+  <!-- iOS support (safe to keep) -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-title" content="Granite Measure" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
 
   <style>
     body {
@@ -36,9 +41,8 @@
 
     .header h3 {
       margin: 0;
-      font-weight: 600;
-      letter-spacing: 0.5px;
       font-size: 16px;
+      font-weight: 600;
     }
 
     table {
@@ -49,18 +53,16 @@
       overflow: hidden;
     }
 
-    th {
-      background: #e5e7eb;
-      color: #111827;
-      font-size: 13px;
-      font-weight: 600;
-    }
-
     th, td {
       border: 1px solid #d1d5db;
       padding: 2px;
       text-align: center;
       height: 28px;
+    }
+
+    th {
+      background: #e5e7eb;
+      font-size: 13px;
     }
 
     input {
@@ -71,8 +73,6 @@
       text-align: center;
       font-size: 14px;
       background: transparent;
-      color: #111827;
-      box-sizing: border-box;
     }
 
     .selectedRow {
@@ -84,10 +84,6 @@
     #totalRow {
       background: #f1f5f9;
       font-weight: bold;
-    }
-
-    #grandTotal {
-      color: #0f172a;
     }
 
     button {
@@ -121,7 +117,6 @@
       border: 1px solid #d1d5db;
       border-radius: 5px;
       font-size: 14px;
-      box-sizing: border-box;
     }
 
     .fullBtn {
@@ -131,10 +126,6 @@
 
     .cancelBtn {
       background: #64748b;
-    }
-
-    .cancelBtn:hover {
-      background: #475569;
     }
   </style>
 </head>
@@ -161,112 +152,90 @@
   <button onclick="location.reload()">Fresh Sheet</button>
 
   <div id="copyBox">
-    <label style="font-size:13px; font-weight:bold;">Paste up to which S.No?</label>
-    <input type="number" id="copyEndSno" placeholder="Example: 18">
-
-    <button class="fullBtn" id="pasteBtn" onclick="doCopyPaste()">Paste</button>
+    <label><b>Paste up to which S.No?</b></label>
+    <input type="number" id="copyEndSno" placeholder="Example: 20">
+    <button class="fullBtn" onclick="doCopyPaste()">Paste</button>
     <button class="fullBtn cancelBtn" onclick="closeCopyBox()">Cancel</button>
   </div>
 
-  <script>
-    let sno = 1;
-    let copyLength = 0;
-    let copyWidth = 0;
-    let selectedCopyRowIndex = 1;
-    let activeColumn = "length";
+<script>
+let sno = 1;
+let copyLength = 0;
+let copyWidth = 0;
+let selectedCopyRowIndex = 1;
+let activeColumn = "length";
 
-    function onlyNumberDot(el) {
-      el.value = el.value.replace(/[^0-9.]/g, "");
-      const parts = el.value.split(".");
-      if (parts.length > 2) {
-        el.value = parts[0] + "." + parts.slice(1).join("");
-      }
-    }
+function onlyNumberDot(el) {
+  el.value = el.value.replace(/[^0-9.]/g, "");
+}
 
-    function addRow() {
-      const table = document.getElementById("tbl");
-      const totalRow = document.getElementById("totalRow");
+function addRow() {
+  const table = document.getElementById("tbl");
+  const totalRow = document.getElementById("totalRow");
 
-      const row = totalRow
-        ? table.insertRow(totalRow.rowIndex)
-        : table.insertRow();
+  const row = totalRow ? table.insertRow(totalRow.rowIndex) : table.insertRow();
+  row.innerHTML = `
+    <td>${sno++}</td>
+    <td><input class="length" oninput="onlyNumberDot(this); calc(this)"></td>
+    <td><input class="width" oninput="onlyNumberDot(this); calc(this)"></td>
+    <td class="sft">0</td>
+  `;
 
-      row.innerHTML = `
-        <td>${sno++}</td>
-        <td><input type="text" class="length" oninput="onlyNumberDot(this); calc(this)"></td>
-        <td><input type="text" class="width" oninput="onlyNumberDot(this); calc(this)"></td>
-        <td class="sft">0</td>
-      `;
+  row.querySelectorAll("input").forEach(i => {
+    i.addEventListener("focus", () => selectRow(row, i));
+  });
 
-      row.querySelectorAll("input").forEach((input, index) => {
-        input.addEventListener("focus", () => selectRowForCopy(row, input));
-        input.addEventListener("keydown", e => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            moveToNextRow(row, index);
-          }
-        });
-      });
+  if (!totalRow) {
+    const tr = table.insertRow();
+    tr.id = "totalRow";
+    tr.innerHTML = `<td colspan="3">Total SFT</td><td id="grandTotal">0</td>`;
+  }
+}
 
-      if (!totalRow) {
-        const tr = table.insertRow();
-        tr.id = "totalRow";
-        tr.innerHTML = `
-          <td colspan="3" style="text-align:right;">Total SFT</td>
-          <td id="grandTotal">0</td>
-        `;
-      }
-    }
+function selectRow(row, input) {
+  document.querySelectorAll("#tbl tr").forEach(r => r.classList.remove("selectedRow"));
+  row.classList.add("selectedRow");
 
-    function moveToNextRow(row, index) {
-      const next = row.nextElementSibling;
-      if (!next || next.id === "totalRow") return;
-      next.querySelectorAll("input")[index].focus();
-    }
+  selectedCopyRowIndex = [...document.querySelectorAll("#tbl tr")].indexOf(row);
+  activeColumn = input.classList.contains("length") ? "length" : "width";
+}
 
-    function selectRowForCopy(row, input) {
-      document.querySelectorAll("#tbl tr").forEach(r => r.classList.remove("selectedRow"));
-      row.classList.add("selectedRow");
-      activeColumn = input.classList.contains("length") ? "length" : "width";
-    }
+function calc(input) {
+  const row = input.closest("tr");
+  const l = parseFloat(row.querySelector(".length").value) || 0;
+  const w = parseFloat(row.querySelector(".width").value) || 0;
+  row.querySelector(".sft").innerText = l && w ? (l * w / 144).toFixed(2) : "0";
+  total();
+}
 
-    function calc(input) {
-      const row = input.closest("tr");
-      const l = parseFloat(row.querySelector(".length").value) || 0;
-      const w = parseFloat(row.querySelector(".width").value) || 0;
-      row.querySelector(".sft").innerText = l && w ? (l * w / 144).toFixed(2) : "0";
-      totalSFT();
-    }
+function total() {
+  let sum = 0;
+  document.querySelectorAll(".sft").forEach(td => sum += parseFloat(td.innerText) || 0);
+  document.getElementById("grandTotal").innerText = sum.toFixed(2);
+}
 
-    function totalSFT() {
-      let sum = 0;
-      document.querySelectorAll(".sft").forEach(td => sum += parseFloat(td.innerText) || 0);
-      document.getElementById("grandTotal").innerText = sum.toFixed(2);
-    }
+function openCopyBox() {
+  document.getElementById("copyBox").style.display = "block";
+}
 
-    function openCopyBox() {
-      document.getElementById("copyBox").style.display = "block";
-    }
+function closeCopyBox() {
+  document.getElementById("copyBox").style.display = "none";
+}
 
-    function closeCopyBox() {
-      document.getElementById("copyBox").style.display = "none";
-    }
+function doCopyPaste() {
+  const end = parseInt(copyEndSno.value);
+  while ((sno - 1) < end) addRow();
+  closeCopyBox();
+}
 
-    function doCopyPaste() {
-      closeCopyBox();
-    }
+for (let i = 0; i < 40; i++) addRow();
+</script>
 
-    for (let i = 0; i < 40; i++) addRow();
-  </script>
-
-  <!-- ✅ SERVICE WORKER REGISTER -->
-  <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("sw.js");
-      });
-    }
-  </script>
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js");
+}
+</script>
 
 </body>
 </html>
