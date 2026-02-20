@@ -2,21 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-
   <title>Granite Measurement</title>
 
-  <!-- Viewport -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#0f172a" />
-
-  <!-- iOS support (safe to keep) -->
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-  <meta name="apple-mobile-web-app-title" content="Granite Measure" />
-  <link rel="apple-touch-icon" href="icon-192.png" />
 
   <style>
     body {
@@ -35,29 +27,23 @@
       background: #0f172a;
       color: #f8fafc;
       border-radius: 6px;
-      gap: 10px;
       flex-wrap: wrap;
-    }
-
-    .header h3 {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 600;
+      gap: 10px;
     }
 
     table {
-      border-collapse: collapse;
       width: 100%;
-      background: #ffffff;
+      border-collapse: collapse;
+      background: #fff;
       border-radius: 6px;
       overflow: hidden;
     }
 
     th, td {
       border: 1px solid #d1d5db;
-      padding: 2px;
+      padding: 4px;
       text-align: center;
-      height: 28px;
+      height: 30px;
     }
 
     th {
@@ -76,9 +62,9 @@
     }
 
     .selectedRow {
+      background: #eef2ff;
       outline: 2px solid #1e3a8a;
       outline-offset: -2px;
-      background: #eef2ff;
     }
 
     #totalRow {
@@ -93,7 +79,7 @@
       border: none;
       border-radius: 5px;
       background: #1e3a8a;
-      color: #ffffff;
+      color: #fff;
       cursor: pointer;
     }
 
@@ -112,10 +98,8 @@
 
     #copyEndSno {
       width: 100%;
-      padding: 10px;
+      padding: 8px;
       margin-top: 6px;
-      border: 1px solid #d1d5db;
-      border-radius: 5px;
       font-size: 14px;
     }
 
@@ -132,42 +116,37 @@
 
 <body>
 
-  <div class="header">
-    <h3>Granite Measurement</h3>
-    <h3>Sai Ganesh Industries</h3>
-  </div>
+<div class="header">
+  <h3>Granite Measurement</h3>
+  <h3>Sai Ganesh Industries</h3>
+</div>
 
-  <table id="tbl">
-    <tr>
-      <th>S.No</th>
-      <th>Length (inch)</th>
-      <th>Width (inch)</th>
-      <th>Qty (SFT)</th>
-    </tr>
-  </table>
+<table id="tbl">
+  <tr>
+    <th>S.No</th>
+    <th>Length (inch)</th>
+    <th>Width (inch)</th>
+    <th>Qty (SFT)</th>
+  </tr>
+</table>
 
-  <br>
-  <button onclick="addRow()">Add Row</button>
-  <button onclick="openCopyBox()">Copy / Paste</button>
-  <button onclick="location.reload()">Fresh Sheet</button>
+<br>
+<button onclick="addRow()">Add Row</button>
+<button onclick="openCopyBox()">Copy / Paste</button>
+<button onclick="location.reload()">Fresh Sheet</button>
 
-  <div id="copyBox">
-    <label><b>Paste up to which S.No?</b></label>
-    <input type="number" id="copyEndSno" placeholder="Example: 20">
-    <button class="fullBtn" onclick="doCopyPaste()">Paste</button>
-    <button class="fullBtn cancelBtn" onclick="closeCopyBox()">Cancel</button>
-  </div>
+<div id="copyBox">
+  <label><b>Paste up to which S.No?</b></label>
+  <input type="number" id="copyEndSno" placeholder="Example: 20">
+  <button class="fullBtn" onclick="doCopyPaste()">Paste</button>
+  <button class="fullBtn cancelBtn" onclick="closeCopyBox()">Cancel</button>
+</div>
 
 <script>
 let sno = 1;
+let selectedCopyRowIndex = 1;
 let copyLength = 0;
 let copyWidth = 0;
-let selectedCopyRowIndex = 1;
-let activeColumn = "length";
-
-function onlyNumberDot(el) {
-  el.value = el.value.replace(/[^0-9.]/g, "");
-}
 
 function addRow() {
   const table = document.getElementById("tbl");
@@ -176,13 +155,21 @@ function addRow() {
   const row = totalRow ? table.insertRow(totalRow.rowIndex) : table.insertRow();
   row.innerHTML = `
     <td>${sno++}</td>
-    <td><input class="length" oninput="onlyNumberDot(this); calc(this)"></td>
-    <td><input class="width" oninput="onlyNumberDot(this); calc(this)"></td>
+    <td>
+      <input type="number" inputmode="decimal"
+        class="length"
+        oninput="calc(this)">
+    </td>
+    <td>
+      <input type="number" inputmode="decimal"
+        class="width"
+        oninput="calc(this)">
+    </td>
     <td class="sft">0</td>
   `;
 
   row.querySelectorAll("input").forEach(i => {
-    i.addEventListener("focus", () => selectRow(row, i));
+    i.addEventListener("focus", () => selectRow(row));
   });
 
   if (!totalRow) {
@@ -192,12 +179,10 @@ function addRow() {
   }
 }
 
-function selectRow(row, input) {
+function selectRow(row) {
   document.querySelectorAll("#tbl tr").forEach(r => r.classList.remove("selectedRow"));
   row.classList.add("selectedRow");
-
   selectedCopyRowIndex = [...document.querySelectorAll("#tbl tr")].indexOf(row);
-  activeColumn = input.classList.contains("length") ? "length" : "width";
 }
 
 function calc(input) {
@@ -210,11 +195,24 @@ function calc(input) {
 
 function total() {
   let sum = 0;
-  document.querySelectorAll(".sft").forEach(td => sum += parseFloat(td.innerText) || 0);
+  document.querySelectorAll(".sft").forEach(td => {
+    sum += parseFloat(td.innerText) || 0;
+  });
   document.getElementById("grandTotal").innerText = sum.toFixed(2);
 }
 
 function openCopyBox() {
+  const rows = document.querySelectorAll("#tbl tr");
+  const row = rows[selectedCopyRowIndex];
+
+  if (!row || !row.querySelector(".length")) {
+    alert("Select a row first");
+    return;
+  }
+
+  copyLength = row.querySelector(".length").value || 0;
+  copyWidth = row.querySelector(".width").value || 0;
+
   document.getElementById("copyBox").style.display = "block";
 }
 
@@ -223,11 +221,25 @@ function closeCopyBox() {
 }
 
 function doCopyPaste() {
-  const end = parseInt(copyEndSno.value);
+  const end = parseInt(document.getElementById("copyEndSno").value);
+  if (!end) return;
+
   while ((sno - 1) < end) addRow();
+
+  const rows = document.querySelectorAll("#tbl tr");
+  for (let i = selectedCopyRowIndex; i <= end; i++) {
+    const r = rows[i];
+    if (!r || !r.querySelector(".length")) continue;
+
+    r.querySelector(".length").value = copyLength;
+    r.querySelector(".width").value = copyWidth;
+    calc(r.querySelector(".length"));
+  }
+
   closeCopyBox();
 }
 
+// Initial rows
 for (let i = 0; i < 40; i++) addRow();
 </script>
 
